@@ -1,0 +1,50 @@
+services:
+
+  mongo:
+    image: mongo:6
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    expose:
+      - "5000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/bank_app
+      - SECRET_KEY=supersecretkey
+    depends_on:
+      - mongo
+
+  transactions:
+    build: ./transactions
+    expose:
+      - "3000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/bank_app
+      - PORT=3000
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./studentportfoliotemplate
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+      - transactions
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./studentportfoliotemplate:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+      - transactions 
+
+volumes:
+  mongo_data:
